@@ -17,13 +17,13 @@ class FileStorage:
 
     def all(self, cls=None):
         """Returns the list of objects of one type of class"""
-        if cls:
-            if isinstance(cls, str):
-                cls = globals().get(cls)
-            if cls and issubclass(cls, BaseModel):
-                cls_dict = {k: v for k,
-                            v in self.__objects.items() if isinstance(v, cls)}
-        return FileStorage.__objects
+        if cls is not None:
+            new_dict = {}
+            for key, value in self.__objects.items():
+                if cls == value.__class__ or cls == value.__class__.__name__:
+                    new_dict[key] = value
+            return new_dict
+        return self.__objects
 
     def new(self, obj):
         """Adds new object to storage dictionary"""
@@ -51,9 +51,7 @@ class FileStorage:
                 temp = json.load(f)
                 for key, val in temp.items():
                         self.all()[key] = classes[val['__class__']](**val)
-        except FileNotFoundError:
-            pass
-        except json.decoder.JSONDecodeError:
+        except:
             pass
 
     def delete(self, obj=None):
@@ -61,13 +59,11 @@ class FileStorage:
         Deletes object from __objects if it’s inside -
         if obj is equal to None, the method does nothing
         """
-        if obj is None:
-            return
-        obj_to_del = f"{obj.__class__.__name__}.{obj.id}"
+        if obj is not None:
+            key = obj.__class__.__name__ + '.' + obj.id
+            if key in self.__objects:
+                del self.__objects[key]
 
-        try:
-            del FileStorage.__objects[obj_to_del]
-        except AttributeError:
-            pass
-        except KeyboardInterrupt:
-            pass
+    def close(self):
+    """call reload() method for deserializing the JSON file to objects"""
+    self.reload()
